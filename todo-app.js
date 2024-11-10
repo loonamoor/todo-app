@@ -1,6 +1,17 @@
 (function() {
   let todoArr = [];
-  let listName = '';
+
+  // сохраняем данные в локал сторидж
+  function saveToLocalStorage(listName, data) {
+    localStorage.setItem(listName, JSON.stringify(data));
+  }
+
+  // читаем данные из локал сторидж
+  function readFromLocalStorage(listName) {
+    const data = localStorage.getItem(listName);
+    return data ? JSON.parse(data) : [];
+  }
+
   // создаем и возвращаем заголовок приложения
   function createAppTitle(title) {
     // создаем новый элемент <h2>
@@ -115,9 +126,9 @@
   }
 
   // помещаем все созданные ранее элементы в единый контейнер
-  function createTodoApp(container, title = 'Список дел', key, listName) {
-    key = listName;
-    getLocalStorageData()
+  function createTodoApp(container, title = 'Список дел', listName) {
+    // загрузить существующие задачи
+    todoArr = readFromLocalStorage(listName);
     // создаем новую переменную, значение которого - результат выполнения функции - <h2>
     let todoAppTitle = createAppTitle(title);
     // задаем другую переменную, значение которого - результат выполнения функции, создающей форму для вненсения списка дел - <form> со всеми вложенными элементами
@@ -133,6 +144,36 @@
     // <ul> с <li>
     container.append(todoList);
 
+    // отрисовываем задачи
+    todoArr.forEach(todo => {
+      let todoItem = createTodoItem(todo);
+      if (todo.done) {
+        todoItem.item.classList.add('list-group-item-success');
+      }
+
+      todoItem.doneButton.addEventListener('click', function() {
+        todoItem.item.classList.toggle('list-group-item-success');
+        todo.done = !todo.done;
+        // сохраняем изменения
+        saveToLocalStorage(listName, todoArr);
+      });
+
+      todoItem.deleteButton.addEventListener('click', function() {
+        if (confirm('Вы уверены?')) {
+          todoItem.item.remove();
+          for (let i = 0; i < todoArr.length; i++) {
+            if (todoArr[i].id === todo.id) {
+              todoArr.splice(i, 1);
+            }
+          }
+          saveToLocalStorage(listName, todoArr);
+          console.log(todoArr);
+        }
+      });
+      console.log(todoArr);
+      todoList.append(todoItem.item);
+    });
+
     // браузер создает событие submit на форме по нажатию на Enter или на кнопку создания дела
     todoItemForm.form.addEventListener('submit', function(e) {
       // эта строчка необходима, чтобы предотвратить стандартное действие браузера
@@ -146,7 +187,7 @@
 
       //Задание 8.3 Каждое созданное дело должно храниться в массиве (находится в корне программы) дел в виде объекта
       let todoObj = {
-        id: todoArr.length + 1,
+        id: Math.round(Math.random() * 1e6),
         name: todoItemForm.input.value,
         done: false,
       };
@@ -159,34 +200,7 @@
       // Задание 8.1.3
       let todoItem = createTodoItem(todoObj);
 
-      function dataToJson(data) {
-        return JSON.stringify(data);
-      }
 
-      function jsonToData(data) {
-        return JSON.parse(data);
-      }
-
-      function getLocalStorageData(data) {
-        return localStorage.getItem('localStorageData');
-      }
-
-      function setLocalStorageData(data) {
-        localStorage.setItem('localStorageData', data);
-      }
-
-      function saveToLocalStorage(listName, data) {
-        let storage = getLocalStorageData();
-
-        storage = storage ? jsonToData(storage) : [];
-
-        storage.push(data);
-        setLocalStorageData(dataToJson(storage));
-      }
-
-      function readLocalStorage(listName) {
-
-      }
 
       // добавляем обработчики на кнопки
       // при клике мышью на кнопку "Готово",
@@ -199,6 +213,8 @@
             todoObj.done = true;
           }
         }
+        // сохраняем изменения в локал сторидж
+        saveToLocalStorage(listName, todoArr);
       });
       // при клике мышью на кнопку "Удалить",
       todoItem.deleteButton.addEventListener('click', function() {
@@ -213,7 +229,8 @@
               todoArr.splice(i, 1);
             }
           }
-
+          // сохраняем изменения в локал сторидж
+          saveToLocalStorage(listName, todoArr);
           console.log(todoArr);
         }
       });
@@ -224,6 +241,9 @@
 
       // обнуляем значение в поле, чтобы не пришлось стирать его вручную
       todoItemForm.input.value = '';
+
+      // сохраняем изменения в локал сторидж
+      saveToLocalStorage(listName, todoArr);
     });
   }
 
